@@ -1,0 +1,37 @@
+version: 2 # use CircleCI 2.0
+jobs: # a collection of steps
+  build: # runs not using Workflows must have a `build` job as entry point
+    working_directory: ~/repo # directory where steps will run
+    docker: # run the steps with Docker
+      - image: circleci/node:11.6.0 # ...with this image as the primary container; this is where 
+    parallelism: 2
+    steps: # a collection of executable commands
+      - checkout # special step to check out source code to working directory
+      - restore_cache: # special step to restore the dependency cache
+          # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+          key: dependency-cache-{{ checksum "package.json" }}      
+      - run:
+          name: Install-packages-with-yarn
+          command: yarn
+      - save_cache: # special step to save the dependency cache
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+      - run: # run tests
+          name: test
+          command: yarn test
+      - run:
+          name: update-and-install-python
+          command: sudo apt-get update && sudo apt-get install -y python
+      - run:
+          name: install-pip
+          command: sudo apt-get install python-pip
+      - run:
+          name: install-aws-cli
+          command: sudo pip install awscli --upgrade
+      - run:
+          name: test-that-awscli-installed-properly
+          command: aws --version
+      - run:
+          name: deploy-to-s3-bucket-yay
+          command: yarn deploy
